@@ -1,10 +1,10 @@
 # Mario X Flappy
 
-<video controls src="demo.mp4" title="Title"></video>
-[!demo](demo.mp4)
-
 My first attempt at making games. started off with Brackeys (YouTube) tutorial and made the mario-like game. Then added a couple of advanced things:
 HUD, respawn to checkmark, going down the platform on down arrow, video player when user reaches the flag. Then as a practice, added the floppy bird -like game on top of that.
+
+[demo](demo.mp4) 
+
 ## Credits
 
 asset pack by Brackeys: https://www.youtube.com/@Brackeys
