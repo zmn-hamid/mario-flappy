@@ -1,0 +1,389 @@
+[gd_scene load_steps=28 format=3 uid="uid://owjovwyiupi6"]
+
+[ext_resource type="Texture2D" uid="uid://joyoc2alubl0" path="res://assets/sprites/knight.png" id="1_rd37k"]
+
+[sub_resource type="GDScript" id="GDScript_athnj"]
+script/source = "extends CharacterBody2D
+
+signal update_score_ui(score: int)
+
+const SPEED = 150.0
+const JUMP_VELOCITY = -300.0
+var SPEED_FLOPPY = 100
+var JUMP_VELOCITY_FLOPPY = -200
+
+var saved_score: int = 0
+var temp_score: int = 0:
+	set(value):
+		temp_score = value
+		update_score_ui.emit(temp_score)
+
+var gravity = ProjectSettings.get_setting(\"physics/2d/default_gravity\")
+var is_dead = false  # Flag to check if the player is dead
+var has_played_death: bool = true
+var floppy_bird_activated: bool = true
+var timer_timedout: bool = true
+var respawn_location: Vector2
+var game_finished: bool
+# position of collected coins
+var collected_coins: Array[Vector2] = []
+
+@onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var game_manager: Node = %GameManager
+@onready var collision_shape: CollisionShape2D = $CollisionShape2D
+@onready var timer: Timer = $Timer
+@onready var ray_cast_down: RayCast2D = $RayCast2D
+
+
+
+func _physics_process(delta):
+	if game_finished:
+		animated_sprite.play(\"idle\")
+		return
+	if floppy_bird_activated:
+		if is_dead:
+			return
+		# add the gravity
+		if not is_on_floor():
+			velocity.y += gravity * delta
+		
+		if Input.is_action_just_pressed(\"jump\"):
+			velocity.y = JUMP_VELOCITY_FLOPPY
+		
+		var direction = -1
+		velocity.x = direction * SPEED_FLOPPY
+		animated_sprite.flip_h = true
+		
+		if is_dead:
+			# If dead, only play the death animation and stop further logic
+			if not has_played_death:
+				animated_sprite.play(\"death\")
+				has_played_death = true
+		else:
+			if has_played_death:
+				has_played_death = false
+			if is_on_floor():
+				if direction == 0:
+					animated_sprite.play(\"idle\")
+				else:
+					animated_sprite.play(\"run\")
+			else:
+				animated_sprite.play(\"jump\")
+		
+		move_and_slide()
+		return
+	
+	# meaning it's the mario game
+	else:
+		# add the gravity
+		if not is_on_floor():
+			velocity.y += gravity * delta
+		
+		# handle jump
+		if Input.is_action_just_pressed(\"jump\") and is_on_floor():
+			velocity.y = JUMP_VELOCITY
+		
+		# handle going down platform
+		if Input.is_action_just_pressed(\"move_down\"):
+			position.y += 1
+		
+		# get the input direction and handle the movement/deceleration
+		# as good practice, you should replace ui actions with custom gameplayh actions
+		var direction = Input.get_axis(\"move_left\", \"move_right\")
+		if direction:
+			velocity.x = direction * SPEED
+			animated_sprite.flip_h = false if direction > 0 else true
+		else:
+			velocity.x = move_toward(velocity.x, 0, SPEED)
+		
+		if is_dead:
+			# If dead, only play the death animation and stop further logic
+			if not has_played_death:
+				animated_sprite.play(\"death\")
+				has_played_death = true
+		else:
+			if has_played_death:
+				has_played_death = false
+			if is_on_floor():
+				if direction == 0:
+					animated_sprite.play(\"idle\")
+				else:
+					animated_sprite.play(\"run\")
+			else:
+				animated_sprite.play(\"jump\")
+		
+		move_and_slide()
+
+func add_score(amount: int = 1):
+	temp_score += amount
+
+func change_floppy(activate: bool):
+	floppy_bird_activated = activate
+
+func finished_mario():
+	# save the score (and position but we doln't need it for this project)
+	saved_score = temp_score
+
+func finish_game():
+	game_finished = true
+
+func die():
+	is_dead = true
+	if !floppy_bird_activated:
+		collision_shape.set_deferred(\"disabled\", true)
+	animated_sprite.play(\"death\")
+	has_played_death = true
+	temp_score = saved_score
+	# restore collected coins after the last flag (mario in this case)
+	game_manager.restore_coins(collected_coins)
+	collected_coins.clear()
+	
+
+func alive():
+	await get_tree().process_frame # wait till death is finalized
+	floppy_bird_activated = false
+	is_dead = false
+	collision_shape.disabled = false
+	velocity = Vector2.ZERO  # Reset velocity
+	animated_sprite.play(\"idle\")
+	has_played_death = false
+
+func _ready() -> void:
+	alive()
+	temp_score = saved_score
+
+func _on_timer_timeout() -> void:
+	timer_timedout = true
+
+func _on_killzone_user_died() -> void:
+	die()
+
+func _on_killzone_user_respawned() -> void:
+	alive()
+	global_position = respawn_location
+
+func _on_coin_collected_coin(coin_position: Vector2) -> void:
+	add_score(1)
+	collected_coins.append(coin_position)
+
+func _on_checkmark(location: Vector2):
+	respawn_location = location
+"
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5wnr4"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(64, 192, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_av6uw"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(64, 160, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_m4l0c"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gb77k"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_chksp"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_pjwte"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(96, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_arflg"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(64, 160, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3l5xh"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(0, 64, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1kxcg"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(32, 64, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gtap6"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(64, 64, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gbjja"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(96, 64, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ja1rx"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(128, 64, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1cphc"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(160, 64, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mcp50"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(192, 64, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ql42s"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(224, 64, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_26d5f"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(0, 96, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bmoou"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(32, 96, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_et8u6"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(64, 96, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ffqkk"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(96, 96, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ry6hy"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(128, 96, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yeete"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(160, 96, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_u48nc"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(192, 96, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_mtkts"]
+atlas = ExtResource("1_rd37k")
+region = Rect2(224, 96, 32, 32)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_627bu"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5wnr4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_av6uw")
+}],
+"loop": false,
+"name": &"death",
+"speed": 10.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_m4l0c")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gb77k")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_chksp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_pjwte")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_arflg")
+}],
+"loop": true,
+"name": &"jump",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3l5xh")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1kxcg")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gtap6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gbjja")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ja1rx")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1cphc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mcp50")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ql42s")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_26d5f")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_bmoou")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_et8u6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ffqkk")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ry6hy")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yeete")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_u48nc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_mtkts")
+}],
+"loop": true,
+"name": &"run",
+"speed": 10.0
+}]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_gwvkg"]
+radius = 5.0
+
+[node name="player" type="CharacterBody2D"]
+collision_layer = 2
+script = SubResource("GDScript_athnj")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -12)
+sprite_frames = SubResource("SpriteFrames_627bu")
+animation = &"death"
+autoplay = "idle"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -5)
+shape = SubResource("CircleShape2D_gwvkg")
+disabled = true
+
+[node name="Timer" type="Timer" parent="."]
+wait_time = 0.15
+
+[node name="camera" type="Camera2D" parent="."]
+position = Vector2(0, -8)
+zoom = Vector2(4.39, 4.39)
+limit_bottom = 80
+limit_smoothed = true
+position_smoothing_enabled = true
+
+[node name="RayCast2D" type="RayCast2D" parent="."]
+position = Vector2(0, -4)
+target_position = Vector2(0, 5)
+
+[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

@@ -1,0 +1,61 @@
+[gd_scene load_steps=8 format=3 uid="uid://c2j33klpokqrv"]
+
+[ext_resource type="Script" path="res://assets/sprites/floppy_flag.gd" id="1_qm3aa"]
+[ext_resource type="Texture2D" uid="uid://7bdhs7q57fmj" path="res://assets/sprites/world_tileset.png" id="2_mpprh"]
+[ext_resource type="Material" uid="uid://eis71fa7teb6" path="res://shaders/new_shader_material.tres" id="3_vgldl"]
+[ext_resource type="VideoStream" path="res://assets/vfx/output.ogv" id="4_522vj"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5ca4i"]
+atlas = ExtResource("2_mpprh")
+region = Rect2(128, 48, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_heipf"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5ca4i")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_5mejn"]
+size = Vector2(14, 14)
+
+[node name="floppy_flag" type="Area2D"]
+collision_mask = 2
+script = ExtResource("1_qm3aa")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -8)
+sprite_frames = SubResource("SpriteFrames_heipf")
+
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="."]
+material = ExtResource("3_vgldl")
+offset_left = -65.0
+offset_top = -35.0
+offset_right = 1855.0
+offset_bottom = 1053.0
+rotation = -0.54455
+scale = Vector2(0.0320619, 0.0320619)
+stream = ExtResource("4_522vj")
+bus = &"yippie"
+
+[node name="VideoStreamPlayer2" type="VideoStreamPlayer" parent="."]
+material = ExtResource("3_vgldl")
+offset_left = 11.0
+offset_top = -65.0
+offset_right = 1931.0
+offset_bottom = 1023.0
+rotation = 0.468225
+scale = Vector2(0.0320619, 0.0320619)
+stream = ExtResource("4_522vj")
+volume_db = -80.0
+bus = &"yippie"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -7)
+shape = SubResource("RectangleShape2D_5mejn")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

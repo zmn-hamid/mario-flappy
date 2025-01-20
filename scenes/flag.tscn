@@ -1,0 +1,50 @@
+[gd_scene load_steps=8 format=3 uid="uid://gf4hjbeafu2u"]
+
+[ext_resource type="Script" path="res://scripts/flag.gd" id="1_owy6k"]
+[ext_resource type="Texture2D" uid="uid://7bdhs7q57fmj" path="res://assets/sprites/world_tileset.png" id="1_vp5bh"]
+[ext_resource type="Material" uid="uid://eis71fa7teb6" path="res://shaders/new_shader_material.tres" id="3_bpafk"]
+[ext_resource type="VideoStream" path="res://assets/vfx/output.ogv" id="3_h0cu3"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5ca4i"]
+atlas = ExtResource("1_vp5bh")
+region = Rect2(128, 48, 16, 16)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_heipf"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5ca4i")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_3swl5"]
+resource_local_to_scene = true
+size = Vector2(24, 19)
+
+[node name="mario_flag" type="Area2D"]
+collision_mask = 2
+script = ExtResource("1_owy6k")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -8)
+sprite_frames = SubResource("SpriteFrames_heipf")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -7)
+scale = Vector2(0.588615, 0.73721)
+shape = SubResource("RectangleShape2D_3swl5")
+
+[node name="VideoStreamPlayer" type="VideoStreamPlayer" parent="."]
+material = ExtResource("3_bpafk")
+offset_left = -30.0
+offset_top = -71.0
+offset_right = 1890.0
+offset_bottom = 1017.0
+scale = Vector2(0.0320619, 0.0320619)
+stream = ExtResource("3_h0cu3")
+bus = &"yippie"
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

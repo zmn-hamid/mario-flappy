@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://hvi4m5a0ir20"]
+
+[ext_resource type="Script" path="res://scripts/killzone.gd" id="1_jgmod"]
+[ext_resource type="AudioStream" uid="uid://vorvu7dlt32r" path="res://assets/sounds/hurt.wav" id="2_s6gec"]
+
+[node name="Area2D" type="Area2D"]
+collision_mask = 2
+script = ExtResource("1_jgmod")
+
+[node name="HurtSound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("2_s6gec")
+bus = &"sfx"
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
